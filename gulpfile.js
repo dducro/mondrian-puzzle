@@ -32,7 +32,7 @@ gulp.task('watch', function() {
     gulp.watch('./resources/js/**/*.js', ['scripts']);
 });
 
-gulp.task('deploy', function() {
-    return gulp.src("./dist/**/*")
+gulp.task('deploy', ['default'], function() {
+    return gulp.src("./public/**/*")
         .pipe(deploy())
 });
