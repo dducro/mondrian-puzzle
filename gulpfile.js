@@ -1,5 +1,6 @@
 var gulp = require('gulp');
 var plugins = require('gulp-load-plugins')();
+var deploy = require('gulp-gh-pages');
 
 gulp.task('default', ['sass', 'jquery', 'vendor', 'scripts']);
 
@@ -29,4 +30,9 @@ gulp.task('sass', function() {
 gulp.task('watch', function() {
     gulp.watch('./resources/scss/**/*.scss', ['sass']);
     gulp.watch('./resources/js/**/*.js', ['scripts']);
+});
+
+gulp.task('deploy', ['default'], function() {
+    return gulp.src("./public/**/*")
+        .pipe(deploy())
 });
