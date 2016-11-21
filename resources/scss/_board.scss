@@ -45,6 +45,7 @@
     box-sizing: border-box;
 
     .cell {
+        position: relative;
         $cell-size: 48px;
         margin: 0;
         display: inline-block;
@@ -62,6 +63,14 @@
                 height: $cell-size;
                 background-color: rgba(0, 0, 0, .3);
             }
+        }
+
+        .remove {
+            position: absolute;
+            top: -20px;
+            right: -20px;
+            z-index: 100;
+            border: 1px solid rgba(0, 0, 0, .4);
         }
     }
 }

@@ -9,22 +9,24 @@ var Board = function() {
     this.cells = [];
     this.shapes = [];
     this.currentShape = null;
+    this.shapeToRemove = null;
     this.score = 0;
     this.finished = false;
-    this.size = 8;
+    this.size = 10;
     this.minSize = 4;
     this.maxSize = 20;
 
     this.colors = ['orange', 'cyan', 'green', 'yellow', 'red', 'indigo', 'brown', 'purple', 'blue-grey', 'grey', 'blue', 'pink'];
-    this.paters = ['line1', 'line2', 'line3', 'line4', 'zig-zag'];
-    shuffle(this.colors);
-    shuffle(this.paters);
+    this.patterns = ['line1', 'line2', 'line3', 'line4', 'zig-zag'];
+    this.shapeColors = [];
+    this.setColors();
 }
 
 Board.prototype = {
     init: function() {
         this.generateBoard();
         this.binds();
+        return this;
     },
     generateBoard: function() {
         var width = this.size * 50 + 2;
@@ -50,6 +52,9 @@ Board.prototype = {
     binds: function() {
         this.$board.on('click', '.cell', $.proxy(this.onClick, this));
         this.$board.on('mouseenter', '.cell', $.proxy(this.onEnter, this));
+        this.$board.on('mouseleave', '.cell', $.proxy(this.onLeave, this));
+        this.$board.on('mouseleave', '.cell, .cell .remove', $.proxy(this.onLeave, this));
+        this.$board.on('click', '.cell .remove', $.proxy(this.onRemove, this));
         this.$restart.on('click', $.proxy(this.onRestart, this));
         this.$reduce.on('click', $.proxy(this.onReduceSize, this));
         this.$expand.on('click', $.proxy(this.onExpandSize, this));
@@ -58,12 +63,12 @@ Board.prototype = {
         this.shapes.forEach(function(shape) {
             shape.fill();
         });
-        if (this.currentShape != null) {
+        if (this.currentShape !== null) {
             this.currentShape.fill();
         }
     },
     createShape: function(start, end) {
-        return new Shape(start, end, this.getColorForIndex(this.shapes.length));
+        return new Shape(start, end, this.getColor());
     },
     addShapeWithValidation: function(newShape) {
         if (this.validate(newShape)) {
@@ -73,6 +78,7 @@ Board.prototype = {
             this.checkFinished();
         } else {
             this.removeShapeCells(newShape);
+            this.reuseColor(newShape.color);
         }
     },
     addShape: function(newShape) {
@@ -86,7 +92,13 @@ Board.prototype = {
         this.draw();
     },
     removeShape: function(removeShape) {
+        if (this.shapeToRemove !== null) {
+            this.shapeToRemove.disableRemove();
+            this.shapeToRemove = null;
+        }
         this.removeShapeCells(removeShape);
+        this.reuseColor(removeShape.color);
+        this.calculateScore();
 
         this.shapes = this.shapes.filter(function(shape) {
             return removeShape.id != shape.id;
@@ -118,12 +130,13 @@ Board.prototype = {
     detectOverlap: function(newShape) {
         var overlap = false;
         this.shapes.every(function(shape) {
-            shape.cells.every(function(cell) {
+            for (var id in shape.cells) {
+                var cell = shape.cells[id];
                 if (newShape.has(cell)) {
                     overlap = true;
+                    break;
                 }
-                return !overlap;
-            });
+            }
             return !overlap;
         });
 
@@ -148,15 +161,9 @@ Board.prototype = {
         }
     },
     removeCurrentShape: function() {
-        if (this.currentShape != null) {
+        if (this.currentShape !== null) {
             this.removeShapeCells(this.currentShape);
             this.currentShape = null;
-        }
-    },
-    confirmRemoveShape: function(shape) {
-        var remove = confirm('Remove?');
-        if (remove) {
-            this.removeShape(shape);
         }
     },
     drawCurentShapeWhileDragging: function(cell) {
@@ -188,10 +195,6 @@ Board.prototype = {
     onClick: function(e) {
         e.preventDefault();
 
-        if (this.finished) {
-            return;
-        }
-
         var cell = $(e.target).data('cell'),
             shape = this.getCurrentShape(cell);
 
@@ -203,13 +206,8 @@ Board.prototype = {
         if (shape === null) {
             this.createCurrentShape(cell);
         }
-        // remove a shape
-        else if (this.currentShape === null || shape.id != this.currentShape.id) {
-            this.removeCurrentShape();
-            this.confirmRemoveShape(shape);
-        }
         // complete a shape
-        else {
+        else if (this.currentShape !== null && shape.id == this.currentShape.id) {
             this.addShapeWithValidation(this.currentShape);
             this.currentShape = null;
         }
@@ -217,19 +215,41 @@ Board.prototype = {
     onEnter: function(e) {
         e.preventDefault();
 
-        if (this.finished) {
-            return;
-        }
-
-        var cell = $(e.target).data('cell');
+        var cell = $(e.target).data('cell'),
+            shape = this.getShape(cell);
 
         // draw current shape while dragging
-        if (this.currentShape != null) {
+        if (this.currentShape !== null) {
             this.drawCurentShapeWhileDragging(cell);
+        }
+        // show remove button
+        else if (shape !== null) {
+            this.shapeToRemove = shape;
+            shape.enableRemove();
+        }
+    },
+    onLeave: function(e) {
+        e.preventDefault();
+
+        // hide remove button
+        if (this.shapeToRemove !== null) {
+            this.shapeToRemove.disableRemove();
+            this.shapeToRemove = null;
+        }
+    },
+    onRemove: function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        // remove shape
+        if (this.shapeToRemove !== null) {
+            this.removeCurrentShape();
+            this.removeShape(this.shapeToRemove);
         }
     },
     onRestart: function() {
         this.clear();
+        this.setColors();
         this.finished = false;
         this.calculateScore();
     },
@@ -291,14 +311,27 @@ Board.prototype = {
             return self.getShape(cell) === null;
         });
     },
-    getColorForIndex: function(index) {
-        if (index <= (this.colors.length - 1)) {
-            return 'color-' + this.colors[index];
-        }
+    setColors: function() {
+        var self = this;
+        shuffle(this.colors);
+        shuffle(this.patterns);
 
-        var paterIndex = Math.floor(index / (this.colors.length - 1)) - 1;
-        var colorIndex = index % (this.colors.length);
-
-        return 'color-' + this.colors[colorIndex] + '-' + this.paters[paterIndex];
+        this.shapeColors = this.colors.map(function(color) {
+            return 'color-' + color;
+        });
+        this.patterns.forEach(function(pattern) {
+            self.colors.forEach(function(color) {
+                self.shapeColors.push('color-' + color + '-' + pattern);
+            });
+        });
+    },
+    getColor: function() {
+        var color = this.shapeColors.shift();
+        this.shapeColors.push(color);
+        return color;
+    },
+    reuseColor: function(color) {
+        this.shapeColors.splice(this.shapeColors.indexOf(color), 1);
+        this.shapeColors.unshift(color);
     }
 };
