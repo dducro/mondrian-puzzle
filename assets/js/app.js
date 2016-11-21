@@ -9,22 +9,24 @@ var Board = function() {
     this.cells = [];
     this.shapes = [];
     this.currentShape = null;
+    this.shapeToRemove = null;
     this.score = 0;
     this.finished = false;
-    this.size = 8;
+    this.size = 10;
     this.minSize = 4;
     this.maxSize = 20;
 
     this.colors = ['orange', 'cyan', 'green', 'yellow', 'red', 'indigo', 'brown', 'purple', 'blue-grey', 'grey', 'blue', 'pink'];
-    this.paters = ['line1', 'line2', 'line3', 'line4', 'zig-zag'];
-    shuffle(this.colors);
-    shuffle(this.paters);
+    this.patterns = ['line1', 'line2', 'line3', 'line4', 'zig-zag'];
+    this.shapeColors = [];
+    this.setColors();
 }
 
 Board.prototype = {
     init: function() {
         this.generateBoard();
         this.binds();
+        return this;
     },
     generateBoard: function() {
         var width = this.size * 50 + 2;
@@ -50,6 +52,9 @@ Board.prototype = {
     binds: function() {
         this.$board.on('click', '.cell', $.proxy(this.onClick, this));
         this.$board.on('mouseenter', '.cell', $.proxy(this.onEnter, this));
+        this.$board.on('mouseleave', '.cell', $.proxy(this.onLeave, this));
+        this.$board.on('mouseleave', '.cell, .cell .remove', $.proxy(this.onLeave, this));
+        this.$board.on('click', '.cell .remove', $.proxy(this.onRemove, this));
         this.$restart.on('click', $.proxy(this.onRestart, this));
         this.$reduce.on('click', $.proxy(this.onReduceSize, this));
         this.$expand.on('click', $.proxy(this.onExpandSize, this));
@@ -58,12 +63,12 @@ Board.prototype = {
         this.shapes.forEach(function(shape) {
             shape.fill();
         });
-        if (this.currentShape != null) {
+        if (this.currentShape !== null) {
             this.currentShape.fill();
         }
     },
     createShape: function(start, end) {
-        return new Shape(start, end, this.getColorForIndex(this.shapes.length));
+        return new Shape(start, end, this.getColor());
     },
     addShapeWithValidation: function(newShape) {
         if (this.validate(newShape)) {
@@ -73,6 +78,7 @@ Board.prototype = {
             this.checkFinished();
         } else {
             this.removeShapeCells(newShape);
+            this.reuseColor(newShape.color);
         }
     },
     addShape: function(newShape) {
@@ -86,7 +92,13 @@ Board.prototype = {
         this.draw();
     },
     removeShape: function(removeShape) {
+        if (this.shapeToRemove !== null) {
+            this.shapeToRemove.disableRemove();
+            this.shapeToRemove = null;
+        }
         this.removeShapeCells(removeShape);
+        this.reuseColor(removeShape.color);
+        this.calculateScore();
 
         this.shapes = this.shapes.filter(function(shape) {
             return removeShape.id != shape.id;
@@ -118,12 +130,13 @@ Board.prototype = {
     detectOverlap: function(newShape) {
         var overlap = false;
         this.shapes.every(function(shape) {
-            shape.cells.every(function(cell) {
+            for (var id in shape.cells) {
+                var cell = shape.cells[id];
                 if (newShape.has(cell)) {
                     overlap = true;
+                    break;
                 }
-                return !overlap;
-            });
+            }
             return !overlap;
         });
 
@@ -148,15 +161,9 @@ Board.prototype = {
         }
     },
     removeCurrentShape: function() {
-        if (this.currentShape != null) {
+        if (this.currentShape !== null) {
             this.removeShapeCells(this.currentShape);
             this.currentShape = null;
-        }
-    },
-    confirmRemoveShape: function(shape) {
-        var remove = confirm('Remove?');
-        if (remove) {
-            this.removeShape(shape);
         }
     },
     drawCurentShapeWhileDragging: function(cell) {
@@ -188,10 +195,6 @@ Board.prototype = {
     onClick: function(e) {
         e.preventDefault();
 
-        if (this.finished) {
-            return;
-        }
-
         var cell = $(e.target).data('cell'),
             shape = this.getCurrentShape(cell);
 
@@ -203,13 +206,8 @@ Board.prototype = {
         if (shape === null) {
             this.createCurrentShape(cell);
         }
-        // remove a shape
-        else if (this.currentShape === null || shape.id != this.currentShape.id) {
-            this.removeCurrentShape();
-            this.confirmRemoveShape(shape);
-        }
         // complete a shape
-        else {
+        else if (this.currentShape !== null && shape.id == this.currentShape.id) {
             this.addShapeWithValidation(this.currentShape);
             this.currentShape = null;
         }
@@ -217,19 +215,41 @@ Board.prototype = {
     onEnter: function(e) {
         e.preventDefault();
 
-        if (this.finished) {
-            return;
-        }
-
-        var cell = $(e.target).data('cell');
+        var cell = $(e.target).data('cell'),
+            shape = this.getShape(cell);
 
         // draw current shape while dragging
-        if (this.currentShape != null) {
+        if (this.currentShape !== null) {
             this.drawCurentShapeWhileDragging(cell);
+        }
+        // show remove button
+        else if (shape !== null) {
+            this.shapeToRemove = shape;
+            shape.enableRemove();
+        }
+    },
+    onLeave: function(e) {
+        e.preventDefault();
+
+        // hide remove button
+        if (this.shapeToRemove !== null) {
+            this.shapeToRemove.disableRemove();
+            this.shapeToRemove = null;
+        }
+    },
+    onRemove: function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        // remove shape
+        if (this.shapeToRemove !== null) {
+            this.removeCurrentShape();
+            this.removeShape(this.shapeToRemove);
         }
     },
     onRestart: function() {
         this.clear();
+        this.setColors();
         this.finished = false;
         this.calculateScore();
     },
@@ -291,39 +311,80 @@ Board.prototype = {
             return self.getShape(cell) === null;
         });
     },
-    getColorForIndex: function(index) {
-        if (index <= (this.colors.length - 1)) {
-            return 'color-' + this.colors[index];
-        }
+    setColors: function() {
+        var self = this;
+        shuffle(this.colors);
+        shuffle(this.patterns);
 
-        var paterIndex = Math.floor(index / (this.colors.length - 1)) - 1;
-        var colorIndex = index % (this.colors.length);
-
-        return 'color-' + this.colors[colorIndex] + '-' + this.paters[paterIndex];
+        this.shapeColors = this.colors.map(function(color) {
+            return 'color-' + color;
+        });
+        this.patterns.forEach(function(pattern) {
+            self.colors.forEach(function(color) {
+                self.shapeColors.push('color-' + color + '-' + pattern);
+            });
+        });
+    },
+    getColor: function() {
+        var color = this.shapeColors.shift();
+        this.shapeColors.push(color);
+        return color;
+    },
+    reuseColor: function(color) {
+        this.shapeColors.splice(this.shapeColors.indexOf(color), 1);
+        this.shapeColors.unshift(color);
     }
 };
 var Cell = function(point) {
     this.point = point;
     this.$el = null;
+    this.$remove = null;
     this.createElement();
 }
 
 Cell.prototype = {
     createElement: function() {
-        this.$el = $('<div class="cell"></div>');
+        this.$el = $('<div class="cell ' + this.point.id + '"></div>');
         this.$el.data('cell', this);
     },
+    enableRemove: function() {
+        this.$remove = $('<button ' +
+            'class="remove mdl-button mdl-js-button mdl-button--fab mdl-button--mini-fab mdl-button--colored">' +
+            '<i class="material-icons">clear</i>' +
+            '</button>');
+        this.$el.append(this.$remove);
+    },
+    disableRemove: function() {
+        this.$el.empty();
+        this.$remove = null;
+    },
     fill: function(color) {
-        this.removeColor();
+        this.removeFill();
         this.$el.addClass(color);
     },
-    removeColor: function() {
+    removeFill: function() {
         this.$el.removeClass(function(index, css) {
             return (css.match(/(^|\s)color-\S+/g) || []).join(' ');
         });
     }
 };
 
+var Corners = function(start, end) {
+    this.topLeft = new Point(start.x, start.y);
+    this.bottomRight = new Point(end.x, end.y);
+
+    if (end.x < start.x) {
+        this.topLeft.setX(end.x);
+        this.bottomRight.setX(start.x);
+    }
+    if (end.y < start.y) {
+        this.topLeft.setY(end.y);
+        this.bottomRight.setY(start.y);
+    }
+
+    this.topRight = new Point(this.bottomRight.x, this.topLeft.y);
+    this.bottomLeft = new Point(this.topLeft.x, this.bottomRight.y);
+}
 function shuffle(a) {
     var j, x, i;
     for (i = a.length; i; i--) {
@@ -334,13 +395,27 @@ function shuffle(a) {
     }
 }
 $(document).ready(function() {
-    var board = new Board();
-    board.init();
+    window.board = (new Board()).init();
 });
 var Point = function(x, y) {
     this.x = x;
     this.y = y;
+    this.setId();
 }
+
+Point.prototype = {
+    setX: function(x) {
+        this.x = x;
+        this.setId();
+    },
+    setY: function(y) {
+        this.y = y;
+        this.setId();
+    },
+    setId: function() {
+        this.id = this.x + 'x' + this.y;
+    }
+};
 var Shape = function(start, end, color) {
     this.start = start;
     this.end = end;
@@ -348,11 +423,9 @@ var Shape = function(start, end, color) {
     this.color = color;
     this.cells = [];
     this.value = 0;
-    this.topLeft = null;
-    this.bottomRight = null;
 
     this.setId();
-    this.setTopLeftBottomRight();
+    this.setCorners();
 }
 
 Shape.prototype = {
@@ -365,24 +438,14 @@ Shape.prototype = {
     setEnd: function(end) {
         this.end = end;
         this.setId();
-        this.setTopLeftBottomRight();
+        this.setCorners();
     },
-    setTopLeftBottomRight: function() {
-        this.topLeft = jQuery.extend({}, this.start);
-        this.bottomRight = jQuery.extend({}, this.end);
-
-        if (this.end.x < this.start.x) {
-            this.topLeft.x = this.end.x;
-            this.bottomRight.x = this.start.x;
-        }
-        if (this.end.y < this.start.y) {
-            this.topLeft.y = this.end.y;
-            this.bottomRight.y = this.start.y;
-        }
+    setCorners: function() {
+        this.corners = new Corners(this.start, this.end);
     },
     has: function(cell) {
-        if (cell.point.x >= this.topLeft.x && cell.point.x <= this.bottomRight.x
-            && cell.point.y >= this.topLeft.y && cell.point.y <= this.bottomRight.y) {
+        if (cell.point.x >= this.corners.topLeft.x && cell.point.x <= this.corners.bottomRight.x
+            && cell.point.y >= this.corners.topLeft.y && cell.point.y <= this.corners.bottomRight.y) {
             return true;
         }
 
@@ -392,17 +455,24 @@ Shape.prototype = {
         this.cells = [];
     },
     addCell: function(cell) {
-        this.cells.push(cell);
+        this.cells[cell.point.id] = cell;
+    },
+    enableRemove: function() {
+        this.cells[this.corners.topRight.id].enableRemove();
+    },
+    disableRemove: function() {
+        this.cells[this.corners.topRight.id].disableRemove();
     },
     fill: function() {
-        var self = this;
-        this.cells.forEach(function(cell) {
-            cell.fill(self.color);
-        });
+        for (var id in this.cells) {
+            var cell = this.cells[id];
+            cell.fill(this.color);
+        }
     },
     removeFill: function() {
-        this.cells.forEach(function(cell) {
-            cell.removeColor();
-        });
+        for (var id in this.cells) {
+            var cell = this.cells[id];
+            cell.removeFill();
+        }
     }
 };
