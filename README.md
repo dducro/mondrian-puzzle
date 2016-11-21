@@ -9,3 +9,6 @@
 ## Rules
 - All rectangles must have different dimensions.
 - Rectangles can't overlap.
+
+#### Play
+You can play the puzzle [here](https://dducro.github.io/mondrian-puzzle/).
