@@ -6101,16 +6101,15 @@ html, body {
 .full-height {
   height: 100vh; }
 
-.flex-center {
-  align-items: center;
-  display: flex;
-  justify-content: center; }
-
 .position-ref {
   position: relative; }
 
-.content {
+.center {
   text-align: center; }
+
+.content {
+  width: 630px;
+  margin: auto; }
 
 .title {
   line-height: 84px;
