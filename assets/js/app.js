@@ -432,7 +432,11 @@ Shape.prototype = {
     setId: function() {
         var w = Math.abs(this.start.x - this.end.x);
         var h = Math.abs(this.start.y - this.end.y);
-        this.id = w + 'x' + h;
+        if (w < h) {
+            this.id = w + 'x' + h;
+        } else {
+            this.id = h + 'x' + w;
+        }
         this.value = (w + 1) * (h + 1);
     },
     setEnd: function(end) {
