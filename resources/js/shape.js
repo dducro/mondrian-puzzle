@@ -5,11 +5,9 @@ var Shape = function(start, end, color) {
     this.color = color;
     this.cells = [];
     this.value = 0;
-    this.topLeft = null;
-    this.bottomRight = null;
 
     this.setId();
-    this.setTopLeftBottomRight();
+    this.setCorners();
 }
 
 Shape.prototype = {
@@ -22,24 +20,14 @@ Shape.prototype = {
     setEnd: function(end) {
         this.end = end;
         this.setId();
-        this.setTopLeftBottomRight();
+        this.setCorners();
     },
-    setTopLeftBottomRight: function() {
-        this.topLeft = jQuery.extend({}, this.start);
-        this.bottomRight = jQuery.extend({}, this.end);
-
-        if (this.end.x < this.start.x) {
-            this.topLeft.x = this.end.x;
-            this.bottomRight.x = this.start.x;
-        }
-        if (this.end.y < this.start.y) {
-            this.topLeft.y = this.end.y;
-            this.bottomRight.y = this.start.y;
-        }
+    setCorners: function() {
+        this.corners = new Corners(this.start, this.end);
     },
     has: function(cell) {
-        if (cell.point.x >= this.topLeft.x && cell.point.x <= this.bottomRight.x
-            && cell.point.y >= this.topLeft.y && cell.point.y <= this.bottomRight.y) {
+        if (cell.point.x >= this.corners.topLeft.x && cell.point.x <= this.corners.bottomRight.x
+            && cell.point.y >= this.corners.topLeft.y && cell.point.y <= this.corners.bottomRight.y) {
             return true;
         }
 
@@ -49,17 +37,24 @@ Shape.prototype = {
         this.cells = [];
     },
     addCell: function(cell) {
-        this.cells.push(cell);
+        this.cells[cell.point.id] = cell;
+    },
+    enableRemove: function() {
+        this.cells[this.corners.topRight.id].enableRemove();
+    },
+    disableRemove: function() {
+        this.cells[this.corners.topRight.id].disableRemove();
     },
     fill: function() {
-        var self = this;
-        this.cells.forEach(function(cell) {
-            cell.fill(self.color);
-        });
+        for (var id in this.cells) {
+            var cell = this.cells[id];
+            cell.fill(this.color);
+        }
     },
     removeFill: function() {
-        this.cells.forEach(function(cell) {
-            cell.removeColor();
-        });
+        for (var id in this.cells) {
+            var cell = this.cells[id];
+            cell.removeFill();
+        }
     }
 };
