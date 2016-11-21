@@ -14,7 +14,7 @@ var Board = function() {
     this.finished = false;
     this.size = 10;
     this.minSize = 4;
-    this.maxSize = 20;
+    this.maxSize = 32;
 
     this.colors = ['orange', 'cyan', 'green', 'yellow', 'red', 'indigo', 'brown', 'purple', 'blue-grey', 'grey', 'blue', 'pink'];
     this.patterns = ['line1', 'line2', 'line3', 'line4', 'zig-zag'];
@@ -261,7 +261,7 @@ Board.prototype = {
         this.disableSizeButtons();
     },
     onExpandSize: function() {
-        if (this.size < 20) {
+        if (this.size < this.maxSize) {
             this.size++;
             this.generateBoard();
         }
