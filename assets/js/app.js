@@ -40,8 +40,8 @@ Board.prototype = {
         this.cells = [];
         this.shapes = [];
         this.$board.empty();
-        for (var y = 0; y < this.size; y++) {
-            for (var x = 0; x < this.size; x++) {
+        for (var y = this.size; y > 0; y--) {
+            for (var x = 1; x <= this.size; x++) {
                 var cell = new Cell(new Point(x, y));
                 this.cells.push(cell);
                 this.$board.append(cell.$el);
@@ -370,20 +370,20 @@ Cell.prototype = {
 };
 
 var Corners = function(start, end) {
-    this.topLeft = new Point(start.x, start.y);
-    this.bottomRight = new Point(end.x, end.y);
+    this.bottomLeft = new Point(start.x, start.y);
+    this.topRight = new Point(end.x, end.y);
 
     if (end.x < start.x) {
-        this.topLeft.setX(end.x);
-        this.bottomRight.setX(start.x);
+        this.bottomLeft.setX(end.x);
+        this.topRight.setX(start.x);
     }
     if (end.y < start.y) {
-        this.topLeft.setY(end.y);
-        this.bottomRight.setY(start.y);
+        this.bottomLeft.setY(end.y);
+        this.topRight.setY(start.y);
     }
 
-    this.topRight = new Point(this.bottomRight.x, this.topLeft.y);
-    this.bottomLeft = new Point(this.topLeft.x, this.bottomRight.y);
+    this.bottomRight = new Point(this.topRight.x, this.bottomLeft.y);
+    this.topLeft = new Point(this.bottomLeft.x, this.topRight.y);
 }
 function shuffle(a) {
     var j, x, i;
@@ -444,8 +444,8 @@ Shape.prototype = {
         this.corners = new Corners(this.start, this.end);
     },
     has: function(cell) {
-        if (cell.point.x >= this.corners.topLeft.x && cell.point.x <= this.corners.bottomRight.x
-            && cell.point.y >= this.corners.topLeft.y && cell.point.y <= this.corners.bottomRight.y) {
+        if (cell.point.x >= this.corners.bottomLeft.x && cell.point.x <= this.corners.topRight.x
+            && cell.point.y >= this.corners.bottomLeft.y && cell.point.y <= this.corners.topRight.y) {
             return true;
         }
 
