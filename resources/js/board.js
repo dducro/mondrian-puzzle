@@ -40,8 +40,8 @@ Board.prototype = {
         this.cells = [];
         this.shapes = [];
         this.$board.empty();
-        for (var y = 0; y < this.size; y++) {
-            for (var x = 0; x < this.size; x++) {
+        for (var y = this.size; y > 0; y--) {
+            for (var x = 1; x <= this.size; x++) {
                 var cell = new Cell(new Point(x, y));
                 this.cells.push(cell);
                 this.$board.append(cell.$el);

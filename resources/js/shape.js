@@ -26,8 +26,8 @@ Shape.prototype = {
         this.corners = new Corners(this.start, this.end);
     },
     has: function(cell) {
-        if (cell.point.x >= this.corners.topLeft.x && cell.point.x <= this.corners.bottomRight.x
-            && cell.point.y >= this.corners.topLeft.y && cell.point.y <= this.corners.bottomRight.y) {
+        if (cell.point.x >= this.corners.bottomLeft.x && cell.point.x <= this.corners.topRight.x
+            && cell.point.y >= this.corners.bottomLeft.y && cell.point.y <= this.corners.topRight.y) {
             return true;
         }
 
