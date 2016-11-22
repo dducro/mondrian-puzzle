@@ -430,14 +430,14 @@ var Shape = function(start, end, color) {
 
 Shape.prototype = {
     setId: function() {
-        var w = Math.abs(this.start.x - this.end.x);
-        var h = Math.abs(this.start.y - this.end.y);
+        var w = Math.abs(this.start.x - this.end.x) + 1;
+        var h = Math.abs(this.start.y - this.end.y) + 1;
         if (w < h) {
             this.id = w + 'x' + h;
         } else {
             this.id = h + 'x' + w;
         }
-        this.value = (w + 1) * (h + 1);
+        this.value = w * h;
     },
     setEnd: function(end) {
         this.end = end;
