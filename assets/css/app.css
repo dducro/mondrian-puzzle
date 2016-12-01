@@ -6161,8 +6161,7 @@ html, body {
     .rules li.error:before {
       transition: background-color 1s;
       background-color: #f44336;
-      -webkit-animation: bounce 1.5s;
-      animation: bounce 1.5s; }
+      animation: bounce 1.5s 2; }
 
 #high-scores {
   text-align: left;
