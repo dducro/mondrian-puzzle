@@ -1,4 +1,4 @@
-var Corners = function(start, end) {
+var CornerPoints = function(start, end) {
     this.bottomLeft = new Point(start.x, start.y);
     this.topRight = new Point(end.x, end.y);
 

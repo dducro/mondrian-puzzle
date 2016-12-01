@@ -24,22 +24,28 @@
 
         <span class="title">Mondrian Puzzle</span>
 
-        <div class="rules">
-            <strong>Instructions</strong>
-            <ul>
-                <li>Draw rectangles on the board.</li>
-                <li>Fill the whole canvas with rectangles.</li>
-                <li>Your score is calculated by the size of the largest rectangle minus the smallest.</li>
-                <li>Try to achieve the lowest score.</li>
-            </ul>
-            <strong>Rules</strong>
-            <ul>
-                <li class="rule-in-use">All rectangles must have different dimensions.</li>
-                <li class="rule-overlap">Rectangles can't overlap.</li>
-            </ul>
+        <div class="flex">
+            <div class="rules">
+                <strong>Instructions</strong>
+                <ul>
+                    <li>Draw rectangles on the board.</li>
+                    <li>Fill the whole canvas with rectangles.</li>
+                    <li>Your score is calculated by the size of the largest rectangle minus the smallest.</li>
+                    <li>Try to achieve the lowest score.</li>
+                </ul>
+                <strong>Rules</strong>
+                <ul>
+                    <li class="rule-in-use">All rectangles must have different dimensions.</li>
+                    <li class="rule-overlap">Rectangles can't overlap.</li>
+                </ul>
+            </div>
+
+            <div id="high-scores">
+                <strong>High scores:</strong>
+                <ul></ul>
+            </div>
         </div>
 
-        <p class="score">Score: <span id="score">0</span></p>
         <button id="restart"
                 class="mdl-button mdl-js-button mdl-button--fab mdl-js-ripple-effect mdl-button--colored">
             <i class="material-icons">replay</i>
