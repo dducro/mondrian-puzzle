@@ -1,14 +1,26 @@
 var Cell = function(point) {
     this.point = point;
     this.$el = null;
+    this.$text = null;
     this.$remove = null;
     this.createElement();
 }
 
 Cell.prototype = {
     createElement: function() {
+        this.$text = $('<span class="text"></span>');
         this.$el = $('<div class="cell ' + this.point.id + '"></div>');
         this.$el.data('cell', this);
+        this.$el.append(this.$text);
+    },
+    text: function(text, position) {
+        this.$text.html(text).attr('style', '');
+        if (typeof position !== 'undefined') {
+            this.$text.css(position);
+        }
+    },
+    emptyText: function() {
+        this.text('');
     },
     enableRemove: function() {
         this.$remove = $('<button ' +
@@ -18,16 +30,20 @@ Cell.prototype = {
         this.$el.append(this.$remove);
     },
     disableRemove: function() {
-        this.$el.empty();
+        this.$remove.remove();
         this.$remove = null;
     },
     fill: function(color) {
         this.removeFill();
-        this.$el.addClass(color);
+        this.$el.addClass('fill').addClass(color);
     },
     removeFill: function() {
         this.$el.removeClass(function(index, css) {
-            return (css.match(/(^|\s)color-\S+/g) || []).join(' ');
-        });
+            return (css.match(/(^|\s)(color-|pattern-)\S+/g) || []).join(' ');
+        }).removeClass('fill');
+    },
+    empty: function() {
+        this.removeFill();
+        this.emptyText();
     }
 };

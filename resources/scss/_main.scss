@@ -19,6 +19,10 @@ html, body {
     text-align: center;
 }
 
+.flex {
+    display: flex;
+}
+
 .content {
     width: 630px;
     margin: auto;
@@ -33,5 +37,10 @@ html, body {
 
 .shake {
     animation: shake 0.8s cubic-bezier(.36, .07, .19, .97) both;
+    transform: translate3d(0, 0, 0);
+}
+
+.wiggle {
+    animation: wiggle 1s;
     transform: translate3d(0, 0, 0);
 }

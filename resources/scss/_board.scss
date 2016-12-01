@@ -1,9 +1,7 @@
-.score {
-    font-size: 24px;
-}
-
 .rules {
     text-align: left;
+    width: 83%;
+    display: inline-block;
 
     li {
         position: relative;
@@ -26,15 +24,26 @@
             &:before {
                 transition: background-color 1s;
                 background-color: $color-red;
-                -webkit-animation: bounce 1.5s infinite;
-                animation: bounce 1.5s infinite;
+                -webkit-animation: bounce 1.5s;
+                animation: bounce 1.5s;
             }
         }
     }
 }
 
+#high-scores {
+    text-align: left;
+    width: 17%;
+    display: inline-block;
+
+    .wiggle {
+        transition: color 1s;
+        color: $color-green;
+    }
+}
+
 #size {
-    margin-top: 40px;
+    margin-top: 20px;
 }
 
 #board {
@@ -54,15 +63,41 @@
         width: $cell-size;
         height: $cell-size;
 
-        &:hover {
-            cursor: pointer;
-            &:after {
-                content: '';
-                display: block;
-                width: $cell-size;
-                height: $cell-size;
-                background-color: rgba(0, 0, 0, .3);
+        &:not(.fill) {
+            &:hover {
+                cursor: pointer;
+                &:after {
+                    content: '';
+                    position: absolute;
+                    display: block;
+                    width: $cell-size;
+                    height: $cell-size;
+                    top: 0;
+                    left: 0;
+                    background-color: rgba(0, 0, 0, .3);
+                }
             }
+        }
+
+        &.fill {
+            border: 0;
+            width: $cell-size + 2;
+            height: $cell-size + 2;
+        }
+
+        .text {
+            position: absolute;
+            width: $cell-size;
+            height: $cell-size;
+            pointer-events: none;
+            line-height: $cell-size;
+            text-align: center;
+            color: white;
+            font-weight: bold;
+            @include text-stroke(black);
+            z-index: 999;
+            line-height: 16px;
+            padding-top: 5px;
         }
 
         .remove {
